@@ -167,8 +167,15 @@ struct opInfo {
     std::string opstring;
 };
 
+struct dataMnemonic {
+    dataMnemonic(unsigned long location, unsigned char value) : location(location), value(value) {}
+    unsigned long location;
+    unsigned char value;
+};
+
 int main(int argc, char *argv[])
 {
+    std::vector<dataMnemonic> mnemonics;
     std::map<int,opInfo> operationstyles;
     std::map<string,int> enum_lookup_table;
     std::map<string,label> label_lookup_table;
@@ -189,6 +196,8 @@ int main(int argc, char *argv[])
     operationstyles[JZ] = opInfo("cfl");
     operationstyles[JO] = opInfo("cfl");
     operationstyles[CALL] = opInfo("cfl");
+    operationstyles[SSP] = opInfo("cfl");
+    operationstyles[POP8] = opInfo("2reg");
     std::vector<char> assembly;
     std::vector<std::string> lines;
     std::vector<unsigned char> output;
@@ -235,6 +244,15 @@ int main(int argc, char *argv[])
         }
         for(size_t i = 0;i < instruction_components.size();i++) {
             std::cout << instruction_components[i] << std::endl;
+        }
+        if(instruction_components[0] == "DATA") {
+            if((instruction_components.size() > 2) && label_run) {
+                mnemonics.push_back(dataMnemonic(std::strtoul(instruction_components[1].c_str(),0,10),std::strtoul(instruction_components[2].c_str(),0,10)));
+            } else if(label_run) {
+                cout << "Data mnemonics take two arguments, a location and a value." << endl;
+                goto err;
+            }
+            continue;
         }
         if(instruction_components[0] == "LABEL") {
             if((instruction_components.size() > 1) && label_run) {
@@ -291,7 +309,22 @@ int main(int argc, char *argv[])
                 cout << "26lc instructions are, in fact, more than an opcode(suprise!)." << endl;
                 goto err;
             }
-        } else if(operationstyles[enum_lookup_table[instruction_components[0]]].opstring == "sb") {
+        } else if(operationstyles[enum_lookup_table[instruction_components[0]]].opstring == "2reg") {
+            if(label_run) {
+                output.resize(output.size() + 1);
+                continue;
+            }
+            vector<string> arguments;
+            split_string(instruction_components[1],",",arguments);
+            if(instruction_components.size() != 2) {
+                goto err;
+            }
+            if((arguments[0][0] != 'R')) {
+                goto err;
+            }
+            unsigned char byte;
+            byte |= (arguments[0][1] - '0') << 5;
+            output.push_back(byte);
 
         } else if(operationstyles[enum_lookup_table[instruction_components[0]]].opstring == "ls") {
             if(label_run) {
@@ -376,6 +409,16 @@ int main(int argc, char *argv[])
         label_run = false;
         output.clear();
         goto nextrun;
+    }
+    std::sort(mnemonics.begin(), mnemonics.end(),[](dataMnemonic a, dataMnemonic b){ return (a.location < b.location);});
+    if(mnemonics[0].location < output.size() - 1) { std::cout << "linking error" << std::endl; return -1; }
+    for(dataMnemonic mnem : mnemonics) {
+        size_t filler = 0;
+        filler = mnem.location - output.size() - 1;
+        for(size_t i = 0; i < filler; i++) {
+            output.push_back(0);
+        }
+        output.push_back(mnem.value);
     }
     fwrite(&output[0],sizeof(unsigned char),output.size(),outfile);
     fclose(outfile);
