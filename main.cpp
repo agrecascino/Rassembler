@@ -295,10 +295,10 @@ int main(int argc, char *argv[])
                         output.push_back(byte);
                         unsigned int value = stoul(arguments[1]);
                         cout << value << endl;
-                        output.push_back(value >> 24);
-                        output.push_back(value >> 16);
-                        output.push_back(value >> 8);
                         output.push_back(value);
+                        output.push_back(value >> 8);
+                        output.push_back(value >> 16);
+                        output.push_back(value >> 24);
                     }
                 } else {
                     cout << "26lc insturctions do not take more or less than 2 arguments" << endl;
@@ -379,18 +379,18 @@ int main(int argc, char *argv[])
                         output.push_back(byte);
                         unsigned int value = stoul(arguments[0]);
                         cout << value << endl;
-                        output.push_back(value >> 24);
-                        output.push_back(value >> 16);
-                        output.push_back(value >> 8);
                         output.push_back(value);
+                        output.push_back(value >> 8);
+                        output.push_back(value >> 16);
+                        output.push_back(value >> 24);
                     } else if(isalpha(arguments[0][0])) {
                         byte++;
                         output.push_back(byte);
                         cout << label_lookup_table[arguments[0]].jumpto << endl;
-                        output.push_back(label_lookup_table[arguments[0]].jumpto << 24);
-                        output.push_back(label_lookup_table[arguments[0]].jumpto  << 16);
-                        output.push_back(label_lookup_table[arguments[0]].jumpto  << 8);
                         output.push_back(label_lookup_table[arguments[0]].jumpto);
+                        output.push_back(label_lookup_table[arguments[0]].jumpto >> 8);
+                        output.push_back(label_lookup_table[arguments[0]].jumpto >> 16);
+                        output.push_back(label_lookup_table[arguments[0]].jumpto >> 24);
 
                     }
                 } else {
